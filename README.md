@@ -4,7 +4,6 @@
 ---
 
 <!-- Your Project Status -->
-[![Build Status](https://img.shields.io/github/actions/workflow/status/stevestock/osrs-cg/pages.yml?style=flat-square&logo=github-actions&label=Build)](https://github.com/stevestock/osrs-cg/actions)
 [![Deployment](https://img.shields.io/github/deployments/stevestock/osrs-cg/github-pages?style=flat-square&logo=github&label=Deployment)](https://github.com/stevestock/osrs-cg/deployments)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-stevestock.github.io-success?style=flat-square&logo=github)](https://stevestock.github.io/osrs-cg/)
 [![Last Commit](https://img.shields.io/github/last-commit/stevestock/osrs-cg?style=flat-square&logo=git)](https://github.com/stevestock/osrs-cg/commits)
