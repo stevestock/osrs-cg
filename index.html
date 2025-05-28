@@ -740,6 +740,8 @@
         if (weapon == this.player.prayer) {
           this.health.subUnavoidable(config.hunleffUnavoidableDamage)
         } else {
+          // Player is off-prayer - play damage sound
+          if (config.damageSounds) damageSound()
           this.health.subUnavoidable(config.hunleffUnavoidableDamage)
           this.health.subAvoidable(config.hunleffAvoidableDamage - config.hunleffUnavoidableDamage)
         }
