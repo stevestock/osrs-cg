@@ -29,7 +29,7 @@
         </div>
       </div>
       <canvas id="inventory" width="200" height="350"></canvas>
-      <canvas id="prayer_book" width="200" height="350" style="display: none;"></canvas>
+      <canvas id="prayer_book" width="200" height="330" style="display: none;"></canvas>
     </div>
   </div>
   <div id="additional_stats" style="margin: 10px; display: none;">
@@ -497,27 +497,27 @@
         // Make paws much larger and add light background for visibility
         const isPaws = text === config.tornadoSpawnChar
         const fontSize = Math.floor(this.tileSize * (isPaws ? 0.8 : 0.5))
-        
+
         this.ctx.font = fontSize + "px Arial"
         this.ctx.textAlign = "center"
-        
+
         if (isPaws) {
           // Add light circular background behind paws for visibility
           const centerX = (pos.x + 0.5) * this.tileSize
           const centerY = (pos.y + 0.5) * this.tileSize
           const radius = fontSize * 0.6
-          
+
           this.ctx.beginPath()
           this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
           this.ctx.fillStyle = "rgba(255, 255, 255, 0.5)"  // Semi-transparent white
           this.ctx.fill()
-          
+
           // Optional: Add border
           this.ctx.strokeStyle = "#cccccc"
           this.ctx.lineWidth = 2
           this.ctx.stroke()
         }
-        
+
         this.ctx.fillStyle = color
         this.ctx.fillText(text, (pos.x + 0.5) * this.tileSize, (pos.y + 0.5) * this.tileSize + fontSize * 0.4)
       }
@@ -553,7 +553,7 @@
           const r = i % 2 === 0 ? radius : radius / 2
           const x = centerX + Math.cos(angle) * r
           const y = centerY + Math.sin(angle) * r
-          
+
           if (i === 0) {
             this.ctx.moveTo(x, y)
           } else {
@@ -585,7 +585,7 @@
         this.drawArea(game.boss.area, colors.boss, colors.bossBorder)
         this.drawText(game.boss.area.start.add(new Coords(2, 2)), prayerDisplay(game.boss.prayer), colors.hunleffPrayer)
         this.drawText(game.boss.area.start.add(new Coords(2, 0)), game.boss.damageTaken, colors.hunleffPrayer)
-        
+
         // Boss animations
         for (const anim of game.animations) {
           this.drawAnimationText(anim.position, anim.character, "#ffffff")
@@ -721,14 +721,14 @@
         // Check if it's time for the swap sound (halfway between 4th attack and next)
         if (this.halfSwapTick == this.game.tick) {
           if (config.attackSwapSounds) swapSound()
-          
+
           // Add weapon swap animation at the same time as sound
           if (this.weapon == "S") {
             this.game.addBossAnimation(config.mageSwapChar)  // Lightning for mage
           } else {
             this.game.addBossAnimation(config.rangeSwapChar)  // Crystal for range
           }
-          
+
           this.halfSwapTick = -1
         }
 
@@ -863,7 +863,7 @@
           new Coords(0, 4),    // bottom-left
           new Coords(4, 4)     // bottom-right
         ]
-        
+
         for (const corner of corners) {
           this.animations.push({
             position: this.boss.area.start.add(corner),
@@ -1056,14 +1056,15 @@
         this.canvas = document.getElementById(elementId)
         this.ctx = this.canvas.getContext("2d")
         this.game = game
-        this.tileSize = this.canvas.width / 4
-        this.contents = make2darr(4, 7)
-        this.contents[1][4] = "S"
-        this.contents[2][4] = "B"
+        this.tileWidth = this.canvas.width / 5  // 5 tiles wide
+        this.tileHeight = this.canvas.height / 6  // 6 tiles tall
+        this.contents = make2darr(5, 6)  // Changed to 5x6 grid
+        this.contents[1][3] = "S"  // Adjusted position for new grid
+        this.contents[2][3] = "B"  // Adjusted position for new grid
 
         this.canvas.addEventListener('click', (e) => {
-          const tile = new Coords(Math.floor(e.offsetX / this.tileSize),
-            Math.floor(e.offsetY / this.tileSize));
+          const tile = new Coords(Math.floor(e.offsetX / this.tileWidth),
+            Math.floor(e.offsetY / this.tileHeight));
           this.click(tile)
           this.draw()
         })
@@ -1082,8 +1083,8 @@
       }
 
       draw() {
-        for (var x = 0; x < 4; ++x) {
-          for (var y = 0; y < 7; ++y) {
+        for (var x = 0; x < 5; ++x) {  // Changed to 5 columns
+          for (var y = 0; y < 6; ++y) {  // Changed to 6 rows
             this.drawTile(new Coords(x, y), colors.bg, colors.border)
             if (this.contents[x][y] != null) {
               var textColor = "#fff"
@@ -1098,30 +1099,31 @@
       }
 
       drawText(pos, text, color) {
-        const fontSize = Math.floor(this.tileSize * 0.5)
+        const fontSize = Math.floor(Math.min(this.tileWidth, this.tileHeight) * 0.5)
         this.ctx.font = fontSize + "px Arial"
         this.ctx.textAlign = "center"
         this.ctx.fillStyle = color
-        this.ctx.fillText(prayerDisplay(text), (pos.x + 0.5) * this.tileSize, (pos.y + 0.5) * this.tileSize + fontSize * 0.4)
+        this.ctx.fillText(prayerDisplay(text), (pos.x + 0.5) * this.tileWidth, (pos.y + 0.5) * this.tileHeight + fontSize * 0.4)
       }
 
       drawTile(pos, color, borderColor) {
-        const tileSize = this.tileSize
         if (color != null) {
           this.ctx.fillStyle = color
-          this.ctx.fillRect(pos.x * tileSize, pos.y * tileSize, tileSize, tileSize)
+          this.ctx.fillRect(pos.x * this.tileWidth, pos.y * this.tileHeight, this.tileWidth, this.tileHeight)
         }
-        this.ctx.lineWidth = tileSize / 15
+        this.ctx.lineWidth = Math.min(this.tileWidth, this.tileHeight) / 15
         this.ctx.strokeStyle = borderColor
-        this.ctx.strokeRect(pos.x * tileSize, pos.y * tileSize, tileSize, tileSize)
+        this.ctx.strokeRect(pos.x * this.tileWidth, pos.y * this.tileHeight, this.tileWidth, this.tileHeight)
       }
 
       drawUnit(pos, color, borderColor, scale = 3) {
-        const tileSize = this.tileSize
         this.ctx.beginPath();
-        this.ctx.arc(pos.x * tileSize + 0.5 * tileSize, pos.y * tileSize + 0.5 * tileSize, tileSize / scale, 0, 2 * Math.PI)
+        const centerX = pos.x * this.tileWidth + 0.5 * this.tileWidth
+        const centerY = pos.y * this.tileHeight + 0.5 * this.tileHeight
+        const radius = Math.min(this.tileWidth, this.tileHeight) / scale
+        this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
         this.ctx.fillStyle = color
-        this.ctx.lineWidth = tileSize / 15
+        this.ctx.lineWidth = Math.min(this.tileWidth, this.tileHeight) / 15
         this.ctx.strokeStyle = borderColor
         this.ctx.fill();
         this.ctx.stroke();
@@ -1195,4 +1197,5 @@
     });
   </script>
 </body>
+
 </html>
