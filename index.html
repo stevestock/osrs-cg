@@ -189,6 +189,10 @@
 
       weapon: "#000",
 
+      // Player projectile colors
+      playerRangedProjectile: "#f0fff0", // Off-white with slight green tint
+      playerMagicProjectile: "#ff4444", // Red for magic star
+
       tornado: "#b4330b",
       tornadoBorder: "#ff3c00",
 
@@ -503,6 +507,31 @@
         this.ctx.fillText(prayer, pos.x * tileSize + offsetX, pos.y * tileSize + offsetY + fontSize * 0.4)
       }
 
+      drawStar(pos, color, size) {
+        const tileSize = this.tileSize
+        const centerX = pos.x * tileSize + 0.5 * tileSize
+        const centerY = pos.y * tileSize + 0.5 * tileSize
+        const radius = tileSize / size
+
+        this.ctx.beginPath();
+        // Draw a 4-point star
+        for (let i = 0; i < 8; i++) {
+          const angle = (i * Math.PI) / 4
+          const r = i % 2 === 0 ? radius : radius / 2
+          const x = centerX + Math.cos(angle) * r
+          const y = centerY + Math.sin(angle) * r
+          
+          if (i === 0) {
+            this.ctx.moveTo(x, y)
+          } else {
+            this.ctx.lineTo(x, y)
+          }
+        }
+        this.ctx.closePath()
+        this.ctx.fillStyle = color
+        this.ctx.fill()
+      }
+
       draw() {
         const game = this.game
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
@@ -565,8 +594,15 @@
             this.drawUnit(p.current(), colors.tornado, colors.tornadoBorder, 8)
           }
         }
+        // Player projectiles
         for (const p of game.goodProjectiles) {
-          this.drawUnit(p.current(), colors.playerAttack, colors.playerAttackBorder, 12)
+          if (p.weaponType == "B") {
+            // Bow attack - draw as a line projectile with off-white green tint
+            this.drawLineProjectile(p.current(), p.start, p.target, colors.playerRangedProjectile, 3)
+          } else {
+            // Magic attack - draw as a red 4-point star (much larger)
+            this.drawStar(p.current(), colors.playerMagicProjectile, 4)
+          }
         }
       }
     }
@@ -733,6 +769,9 @@
         this.boss.hit(weapon)
         const proj = new Shadow(this.player.position)
         proj.move(this.boss.position)
+        proj.weaponType = weapon  // Store the weapon type for drawing
+        proj.start = this.player.position.clone()  // Store start position for line direction
+        proj.target = this.boss.position.clone()  // Store target position for line direction
         this.goodProjectiles.push(proj)
       }
 
