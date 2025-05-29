@@ -133,6 +133,10 @@
       attackMagicChar: "💦",
       attackRangeChar: "🏹",
       fishChar: "🐟",
+      // Animation icons
+      tornadoSpawnChar: "🐾",
+      mageSwapChar: "⚡",
+      rangeSwapChar: "🔷",
     }
 
 
@@ -488,6 +492,35 @@
         this.ctx.fillStyle = color
         this.ctx.fillText(text, (pos.x + 0.5) * this.tileSize, (pos.y + 0.5) * this.tileSize + fontSize * 0.4)
       }
+
+      drawAnimationText(pos, text, color) {
+        // Make paws much larger and add light background for visibility
+        const isPaws = text === config.tornadoSpawnChar
+        const fontSize = Math.floor(this.tileSize * (isPaws ? 0.8 : 0.5))
+        
+        this.ctx.font = fontSize + "px Arial"
+        this.ctx.textAlign = "center"
+        
+        if (isPaws) {
+          // Add light circular background behind paws for visibility
+          const centerX = (pos.x + 0.5) * this.tileSize
+          const centerY = (pos.y + 0.5) * this.tileSize
+          const radius = fontSize * 0.6
+          
+          this.ctx.beginPath()
+          this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+          this.ctx.fillStyle = "rgba(255, 255, 255, 0.5)"  // Semi-transparent white
+          this.ctx.fill()
+          
+          // Optional: Add border
+          this.ctx.strokeStyle = "#cccccc"
+          this.ctx.lineWidth = 2
+          this.ctx.stroke()
+        }
+        
+        this.ctx.fillStyle = color
+        this.ctx.fillText(text, (pos.x + 0.5) * this.tileSize, (pos.y + 0.5) * this.tileSize + fontSize * 0.4)
+      }
       drawPrayer(pos, prayer, color, borderColor) {
         const tileSize = this.tileSize
         const offsetX = 0.5 * tileSize, offsetY = 0 * tileSize
@@ -552,6 +585,11 @@
         this.drawArea(game.boss.area, colors.boss, colors.bossBorder)
         this.drawText(game.boss.area.start.add(new Coords(2, 2)), prayerDisplay(game.boss.prayer), colors.hunleffPrayer)
         this.drawText(game.boss.area.start.add(new Coords(2, 0)), game.boss.damageTaken, colors.hunleffPrayer)
+        
+        // Boss animations
+        for (const anim of game.animations) {
+          this.drawAnimationText(anim.position, anim.character, "#ffffff")
+        }
         // Pathing
         if (config.showPathing) {
           for (const tile of game.player.path) {
@@ -683,6 +721,14 @@
         // Check if it's time for the swap sound (halfway between 4th attack and next)
         if (this.halfSwapTick == this.game.tick) {
           if (config.attackSwapSounds) swapSound()
+          
+          // Add weapon swap animation at the same time as sound
+          if (this.weapon == "S") {
+            this.game.addBossAnimation(config.mageSwapChar)  // Lightning for mage
+          } else {
+            this.game.addBossAnimation(config.rangeSwapChar)  // Crystal for range
+          }
+          
           this.halfSwapTick = -1
         }
 
@@ -743,6 +789,9 @@
         this.badProjectiles = []
         this.prevFloor = -1
 
+        // Animation system
+        this.animations = []
+
         this.deathScore = null
         this.tornadoHits = 0
         this.floorHits = 0
@@ -802,6 +851,35 @@
         for (var i = 0; i < 4; ++i) {
           this.tornadoes.push(new Unit(this, random().add(deltas[i]), false, /*immobilize=*/1))
         }
+        // Add stomp animation
+        this.addBossAnimation(config.tornadoSpawnChar)
+      }
+
+      addBossAnimation(character) {
+        // Add animation to all 4 corner tiles of the boss
+        const corners = [
+          new Coords(0, 0),    // top-left
+          new Coords(4, 0),    // top-right
+          new Coords(0, 4),    // bottom-left
+          new Coords(4, 4)     // bottom-right
+        ]
+        
+        for (const corner of corners) {
+          this.animations.push({
+            position: this.boss.area.start.add(corner),
+            character: character,
+            duration: 20,  // ticks to show
+            startTime: Date.now()
+          })
+        }
+      }
+
+      updateAnimations() {
+        // Remove expired animations
+        this.animations = this.animations.filter(anim => {
+          const elapsed = Date.now() - anim.startTime
+          return elapsed < (anim.duration * config.tickLengthMillis / 20) // Show for ~600ms
+        })
       }
 
       spawnFloor() {
@@ -835,6 +913,9 @@
         }
         this.player.move()
         this.boss.move()
+
+        // Update animations
+        this.updateAnimations()
 
         // Damage
         const totaldmg = () => { return this.tornadoHits + this.floorHits + this.bossHits }
