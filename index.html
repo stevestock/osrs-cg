@@ -133,6 +133,8 @@
       attackMagicChar: "⚚",
       attackRangeChar: "🏹",
       fishChar: "🐟",
+      rigourChar: "𓁺",
+      auguryChar: "𓉴",
       // Animation icons
       tornadoSpawnChar: "🐾",
       mageSwapChar: "⚡",
@@ -163,6 +165,8 @@
     const prayerDisplay = (text) => {
       if (text == "S") text = config.prayMagicChar;
       else if (text == "B") text = config.prayRangeChar;
+      else if (text == "P1") text = config.rigourChar;
+      else if (text == "P2") text = config.auguryChar;
       return text;
     }
     const attackDisplay = (text) => {
@@ -294,6 +298,7 @@
         this.attacksDone = 0
         this.weapon = "B"
         this.prayer = "B"
+        this.prayer2 = "P1"  // Second prayer set
         this.eatCD = 0
       }
 
@@ -1059,8 +1064,10 @@
         this.tileWidth = this.canvas.width / 5  // 5 tiles wide
         this.tileHeight = this.canvas.height / 6  // 6 tiles tall
         this.contents = make2darr(5, 6)  // Changed to 5x6 grid
-        this.contents[1][3] = "S"  // Adjusted position for new grid
-        this.contents[2][3] = "B"  // Adjusted position for new grid
+        this.contents[1][3] = "S"  // Original prayer set
+        this.contents[2][3] = "B"  // Original prayer set
+        this.contents[2][5] = "P1"  // New prayer set
+        this.contents[3][5] = "P2"  // New prayer set
 
         this.canvas.addEventListener('click', (e) => {
           const tile = new Coords(Math.floor(e.offsetX / this.tileWidth),
@@ -1075,10 +1082,23 @@
       click(tile) {
         const next = this.contents[tile.x][tile.y]
         if (next == null) return
-        if (next === this.game.player.prayer) {
-          this.game.player.prayer = null
-        } else {
-          this.game.player.prayer = next
+
+        // Handle first prayer set (S/B)
+        if (next == "S" || next == "B") {
+          if (next === this.game.player.prayer) {
+            this.game.player.prayer = null
+          } else {
+            this.game.player.prayer = next
+          }
+        }
+
+        // Handle second prayer set (P1/P2)
+        if (next == "P1" || next == "P2") {
+          if (next === this.game.player.prayer2) {
+            this.game.player.prayer2 = null
+          } else {
+            this.game.player.prayer2 = next
+          }
         }
       }
 
@@ -1088,7 +1108,11 @@
             this.drawTile(new Coords(x, y), colors.bg, colors.border)
             if (this.contents[x][y] != null) {
               var textColor = "#fff"
-              if (this.contents[x][y] == this.game.player.prayer) {
+              // Check if this prayer is active in either set
+              const isActiveSet1 = (this.contents[x][y] == this.game.player.prayer)
+              const isActiveSet2 = (this.contents[x][y] == this.game.player.prayer2)
+
+              if (isActiveSet1 || isActiveSet2) {
                 this.drawUnit(new Coords(x, y), colors.player, colors.playerBorder)
                 textColor = "#000"
               }
