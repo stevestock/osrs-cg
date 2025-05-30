@@ -107,6 +107,7 @@
       hunleffInCorner: false,
       tornadoTrueTile: false,
       disableBossAttacks: false,
+
       tickLengthMillis: 600,
       tornadoTicks: 20,
       noTornadoTicks: 30,
@@ -144,8 +145,8 @@
       tornadoSpawnChar: "🐾",
       mageSwapChar: "⚡",
       rangeSwapChar: "🔷",
+      staffIconScale: 2,
     }
-
 
     // Options handling
     for (const opt of ["opts_damageSounds", "opts_attackSwapSounds", "opts_realSounds", "opts_showPathing", "opts_freezeScoresOnDeath",
@@ -511,7 +512,9 @@
       }
 
       drawText(pos, text, color) {
-        const fontSize = Math.floor(this.tileSize * 0.5)
+        // Make staff icon bigger
+        const isStaff = text === config.attackMagicChar // ⚚
+        const fontSize = Math.floor(this.tileSize * (isStaff ? 0.5 * config.staffIconScale : 0.5))
         this.ctx.font = fontSize + "px Arial"
         this.ctx.textAlign = "center"
         this.ctx.fillStyle = color
@@ -656,6 +659,7 @@
           } else {
             weaponColor = colors.weapon
           }
+          
           this.drawText(game.player.displayPosition, attackDisplay(game.player.weapon), weaponColor)
         }
         if (game.player.prayer != null) {
@@ -1122,7 +1126,9 @@
       }
 
       drawText(pos, text, color) {
-        const fontSize = Math.floor(this.tileSize * 0.5)
+        // Make staff icon bigger in inventory too
+        const isStaff = attackDisplay(text) === config.attackMagicChar // ⚚
+        const fontSize = Math.floor(this.tileSize * (isStaff ? 0.5 * config.staffIconScale : 0.5))
         this.ctx.font = fontSize + "px Arial"
         this.ctx.textAlign = "center"
         
