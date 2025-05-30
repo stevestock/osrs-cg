@@ -130,7 +130,8 @@
       hunleffFirstAttackTypeCD: 4,  // Changed from 3 to 4 so first round has 4 attacks
       hunleffUnavoidableDamage: 6.5,
       hunleffAvoidableDamage: 25,
-      tornadoChance: 0.2, // 20% chance for tornado spawn per attack cycle
+      tornadoMinCycles: 6, // Minimum attack cycles before tornado spawn
+      tornadoMaxCycles: 8, // Maximum attack cycles before tornado spawn
       // Icons
       prayMagicChar: "☄️",
       prayRangeChar: "➹",
@@ -711,6 +712,12 @@
         this.weaponCD = config.hunleffFirstAttackTypeCD
         this.attackCount = 0
         this.halfSwapTick = -1 // Track when to play swap sound
+        this.tornadoCyclesLeft = this.getRandomTornadoCycles() // Cycles until next tornado spawn
+      }
+      
+      getRandomTornadoCycles() {
+        // Random number between tornadoMinCycles and tornadoMaxCycles (inclusive)
+        return config.tornadoMinCycles + Math.floor(Math.random() * (config.tornadoMaxCycles - config.tornadoMinCycles + 1))
       }
       
       hit(weapon) {
@@ -747,14 +754,15 @@
         if (this.attackCD == 0) {
           // Check if tornadoes are already active
           const tornadoesActive = this.game.tornadoes.length > 0
-
-          // 10% chance for tornado spawn (only if no tornadoes active)
-          const isTornadoAttack = !tornadoesActive && Math.random() < config.tornadoChance
+          
+          // Check if it's time for tornado spawn (countdown reached 0)
+          const isTornadoAttack = !tornadoesActive && this.tornadoCyclesLeft <= 0
 
           if (isTornadoAttack) {
             // Tornado spawn attack
             if (config.attackSwapSounds) tornadoSpawnSound()
             this.game.spawnTornadoes()
+            this.tornadoCyclesLeft = this.getRandomTornadoCycles() // Reset counter for next tornado
           } else if (!config.disableBossAttacks) {
             // Regular attack with projectile (only if boss attacks are enabled)
             this.game.bossCast(this.weapon)
@@ -765,6 +773,15 @@
               } else {
                 mageAttackSound()
               }
+            }
+            // Decrement tornado counter only on regular attacks (not tornado spawns)
+            if (!tornadoesActive) {
+              this.tornadoCyclesLeft--
+            }
+          } else {
+            // Tornado-only mode: just decrement counter if no tornadoes active
+            if (!tornadoesActive) {
+              this.tornadoCyclesLeft--
             }
           }
           // If boss attacks are disabled and no tornado spawned, we just skip this attack cycle
