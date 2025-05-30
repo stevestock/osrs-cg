@@ -848,7 +848,20 @@
 
     class Game {
       constructor() {
-        this.player = new Unit(this, new Coords(5, 3), true);
+        // Player spawn positions - 2 middle tiles at each outer wall (entry doors)
+        const doorSpawns = [
+          new Coords(5, 0),   // Top wall left door
+          new Coords(6, 0),   // Top wall right door
+          new Coords(5, 11),  // Bottom wall left door
+          new Coords(6, 11),  // Bottom wall right door
+          new Coords(0, 5),   // Left wall top door
+          new Coords(0, 6),   // Left wall bottom door
+          new Coords(11, 5),  // Right wall top door
+          new Coords(11, 6)   // Right wall bottom door
+        ]
+        const randomSpawn = doorSpawns[rnd(doorSpawns.length)]
+        
+        this.player = new Unit(this, randomSpawn, true);
         this.health = new Health("health")
         this.health.draw()
         if (config.hunleffInCorner) {
