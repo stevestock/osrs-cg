@@ -130,6 +130,7 @@
       hunleffFirstAttackTypeCD: 4,  // Changed from 3 to 4 so first round has 4 attacks
       hunleffUnavoidableDamage: 6.5,
       hunleffAvoidableDamage: 25,
+      tornadoChance: 0.2, // 20% chance for tornado spawn per attack cycle
       // Icons
       prayMagicChar: "☄️",
       prayRangeChar: "➹",
@@ -710,12 +711,6 @@
         this.weaponCD = config.hunleffFirstAttackTypeCD
         this.attackCount = 0
         this.halfSwapTick = -1 // Track when to play swap sound
-        this.tornadoCD = this.getRandomTornadoCD() // Separate tornado timer
-      }
-      
-      getRandomTornadoCD() {
-        // Random interval between 40-80 ticks (similar to original 50 tick average)
-        return 40 + Math.floor(Math.random() * 41)
       }
       
       hit(weapon) {
@@ -724,6 +719,7 @@
           this.damageTaken += config.playerDamage
         }
       }
+
       move() {
         // Handle prayer swapping based on successful player hits (always active)
         if (this.prayerCD == 0) {
@@ -747,52 +743,48 @@
           this.halfSwapTick = -1
         }
 
-        // Handle tornado spawning differently based on mode
-        if (config.disableBossAttacks) {
-          // Tornado-only mode: use separate random timer
-          this.tornadoCD--
-          if (this.tornadoCD <= 0) {
+        // Unified attack cycle logic for both modes
+        if (this.attackCD == 0) {
+          // Check if tornadoes are already active
+          const tornadoesActive = this.game.tornadoes.length > 0
+
+          // 10% chance for tornado spawn (only if no tornadoes active)
+          const isTornadoAttack = !tornadoesActive && Math.random() < config.tornadoChance
+
+          if (isTornadoAttack) {
+            // Tornado spawn attack
             if (config.attackSwapSounds) tornadoSpawnSound()
             this.game.spawnTornadoes()
-            this.tornadoCD = this.getRandomTornadoCD() // Reset with new random interval
-          }
-        } else {
-          // Normal mode: 10% random chance for tornado each attack cycle
-          if (this.attackCD == 0) {
-            // 10% chance for tornado spawn
-            const isTornadoAttack = Math.random() < 0.1
-
-            if (isTornadoAttack) {
-              // Tornado spawn attack - completely replaces regular attack
-              if (config.attackSwapSounds) tornadoSpawnSound()
-              this.game.spawnTornadoes()
-            } else {
-              // Regular attack with projectile
-              this.game.bossCast(this.weapon)
-              // Play attack sound based on weapon type
-              if (config.attackSwapSounds) {
-                if (this.weapon == "B") {
-                  bowAttackSound()
-                } else {
-                  mageAttackSound()
-                }
+          } else if (!config.disableBossAttacks) {
+            // Regular attack with projectile (only if boss attacks are enabled)
+            this.game.bossCast(this.weapon)
+            // Play attack sound based on weapon type
+            if (config.attackSwapSounds) {
+              if (this.weapon == "B") {
+                bowAttackSound()
+              } else {
+                mageAttackSound()
               }
             }
+          }
+          // If boss attacks are disabled and no tornado spawned, we just skip this attack cycle
 
-            this.attackCount++
-            this.attackCD = config.hunleffAttackCD
+          this.attackCount++
+          this.attackCD = config.hunleffAttackCD
 
-            // Handle weapon swap timing
-            this.weaponCD--
-            if (this.weaponCD == 0) {
-              this.weapon = this.weapon == "B" ? "S" : "B"
-              this.weaponCD = config.hunleffAttackTypeCD
-              // Schedule swap sound for halfway point (2.5 ticks from now, rounded to 3)
+          // Handle weapon swap timing (even in tornado-only mode for consistency)
+          this.weaponCD--
+          if (this.weaponCD == 0) {
+            this.weapon = this.weapon == "B" ? "S" : "B"
+            this.weaponCD = config.hunleffAttackTypeCD
+            // Schedule swap sound for halfway point (only if boss attacks enabled)
+            if (!config.disableBossAttacks) {
               this.halfSwapTick = this.game.tick + Math.floor(config.hunleffAttackCD / 2)
             }
           }
         }
       }
+
       get position() {
         return this.area.start.add(new Coords(2, 2))
       }
@@ -987,7 +979,18 @@
         document.getElementById("eat_attacks").innerHTML = (eat / possible * 100).toFixed();
         document.getElementById("stalled_attacks").innerHTML = ((possible - total - eat) / possible * 100).toFixed();
         const dpsPotential = (correct + eat) / possible
-        const survivalPotential = this.health.unavoidableDamage / (this.health.avoidableDamage + this.health.unavoidableDamage)
+        
+        // Calculate survival efficiency differently for tornado-only mode
+        let survivalPotential
+        if (config.disableBossAttacks) {
+          // Tornado-only mode: all damage is avoidable, so calculate based on damage rate over time
+          const expectedDamageRate = 8 // Expected damage per tick for a poor player (baseline)
+          const maxExpectedDamage = this.tick * expectedDamageRate
+          survivalPotential = maxExpectedDamage > 0 ? Math.max(0, (maxExpectedDamage - this.health.avoidableDamage) / maxExpectedDamage) : 1
+        } else {
+          // Normal mode: ratio of unavoidable damage to total damage
+          survivalPotential = this.health.unavoidableDamage / (this.health.avoidableDamage + this.health.unavoidableDamage)
+        }
 
         const currentScore = {
           tick: this.tick,
