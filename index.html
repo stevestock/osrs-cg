@@ -738,6 +738,9 @@
     function tornadoSpawnSound() {
       playSound('sounds/4180_tornado.wav', () => beeper(0.12, 150, 300))
     }
+    function projectileHitSound() {
+      playSound('sounds/4166_hit.wav', () => beeper(0.1, 800, 100))
+    }
 
     class Hunleff {
       constructor(game, area) {
@@ -909,6 +912,11 @@
         proj.start = this.player.position.clone()  // Store start position for line direction
         proj.target = this.boss.position.clone()  // Store target position for line direction
         this.goodProjectiles.push(proj)
+        
+        // Play hit sound after projectile animation completes
+        setTimeout(() => {
+          if (config.attackSwapSounds) projectileHitSound()
+        }, config.tickLengthMillis)
       }
 
       bossCast(weapon) {
