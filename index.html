@@ -200,6 +200,9 @@
       playerPrayer: "#00cc00",
       playerPrayerBorder: "#00aa00",
 
+      prayerSelection: "#C9B87D",        // Prayer selection circle color
+      prayerSelectionBorder: "#C9B87D",  // Prayer selection circle border color
+
       weapon: "#000",
 
       // Player projectile colors
@@ -220,6 +223,20 @@
 
       health: "#b4330b",
       noHealth: "#000",
+      
+      // Hieroglyph colors
+      fishColor: "#f5f5dc",      // Off-white fish (𓆞)
+      rigourColor: "#00aa00",    // Green eyeball (𓁺) 
+      auguryColor: "#8a2be2",    // Purple pyramid (𓉴)
+      attackMagicColor: "#87ceeb", // Light blue crystal staff (⚚)
+      prayMagicColor: "#ffffff",   // White pray magic (☄️) 
+      prayRangeColor: "#006400",   // Dark green pray range (➹)
+      
+      // Active hieroglyph colors (when prayer is active)
+      rigourActiveColor: "#00aa00",    // Green eyeball when active (same as inactive for now)
+      auguryActiveColor: "#8a2be2",    // Purple pyramid when active (same as inactive for now)
+      prayMagicActiveColor: "#ffffff", // White pray magic when active (same as inactive for now)
+      prayRangeActiveColor: "#006400", // Dark green pray range when active (same as inactive for now)
     }
 
     class Coords {
@@ -535,16 +552,25 @@
 
         this.ctx.beginPath();
         this.ctx.arc(pos.x * tileSize + offsetX, pos.y * tileSize + offsetY, tileSize / 5, 0, 2 * Math.PI)
-        this.ctx.fillStyle = color
+        this.ctx.fillStyle = colors.prayerSelection
         this.ctx.lineWidth = tileSize / 30
-        this.ctx.strokeStyle = borderColor
+        this.ctx.strokeStyle = colors.prayerSelectionBorder
         this.ctx.fill();
         this.ctx.stroke();
 
         const fontSize = Math.floor(tileSize * 0.3)
         this.ctx.font = fontSize + "px Arial"
         this.ctx.textAlign = "center"
-        this.ctx.fillStyle = "#fff"
+        
+        // Use custom colors for prayer symbols
+        if (prayer === config.prayMagicChar) {
+          this.ctx.fillStyle = colors.prayMagicColor
+        } else if (prayer === config.prayRangeChar) {
+          this.ctx.fillStyle = colors.prayRangeColor
+        } else {
+          this.ctx.fillStyle = "#fff"
+        }
+        
         this.ctx.fillText(prayer, pos.x * tileSize + offsetX, pos.y * tileSize + offsetY + fontSize * 0.4)
       }
 
@@ -591,7 +617,7 @@
         }
         // Boss
         this.drawArea(game.boss.area, colors.boss, colors.bossBorder)
-        this.drawText(game.boss.area.start.add(new Coords(2, 2)), prayerDisplay(game.boss.prayer), colors.hunleffPrayer)
+        this.drawPrayer(game.boss.area.start.add(new Coords(2, 2)), prayerDisplay(game.boss.prayer), colors.prayerSelection, colors.prayerSelectionBorder)
         this.drawText(game.boss.area.start.add(new Coords(2, 0)), game.boss.damageTaken, colors.hunleffPrayer)
 
         // Boss animations
@@ -621,10 +647,19 @@
           this.drawUnit(game.player.displayPosition, colors.player, colors.playerBorder)
         }
         if (game.player.weapon != null) {
-          this.drawText(game.player.displayPosition, attackDisplay(game.player.weapon), colors.weapon)
+          // Use custom colors for specific weapon types
+          let weaponColor
+          if (game.player.weapon === "F") {
+            weaponColor = colors.fishColor
+          } else if (game.player.weapon === "S") {
+            weaponColor = colors.attackMagicColor
+          } else {
+            weaponColor = colors.weapon
+          }
+          this.drawText(game.player.displayPosition, attackDisplay(game.player.weapon), weaponColor)
         }
         if (game.player.prayer != null) {
-          this.drawPrayer(game.player.displayPosition, prayerDisplay(game.player.prayer), colors.playerPrayer, colors.playerPrayerBorder)
+          this.drawPrayer(game.player.displayPosition, prayerDisplay(game.player.prayer), colors.prayerSelection, colors.prayerSelectionBorder)
         }
         // Tornadoes
         for (const tornado of game.tornadoes) {
@@ -1090,7 +1125,16 @@
         const fontSize = Math.floor(this.tileSize * 0.5)
         this.ctx.font = fontSize + "px Arial"
         this.ctx.textAlign = "center"
-        this.ctx.fillStyle = color
+        
+        // Use custom colors for specific items
+        if (text === "F") {
+          this.ctx.fillStyle = colors.fishColor
+        } else if (text === "S") {
+          this.ctx.fillStyle = colors.attackMagicColor
+        } else {
+          this.ctx.fillStyle = color
+        }
+        
         this.ctx.fillText(attackDisplay(text), (pos.x + 0.5) * this.tileSize, (pos.y + 0.5) * this.tileSize + fontSize * 0.4)
       }
 
@@ -1164,7 +1208,7 @@
               const isActiveSet2 = (this.contents[x][y] == this.game.player.prayer2)
 
               if (isActiveSet1 || isActiveSet2) {
-                this.drawUnit(new Coords(x, y), colors.player, colors.playerBorder)
+                this.drawUnit(new Coords(x, y), colors.prayerSelection, colors.prayerSelectionBorder)
                 textColor = "#000"
               }
               this.drawText(new Coords(x, y), this.contents[x][y], textColor)
@@ -1177,7 +1221,36 @@
         const fontSize = Math.floor(Math.min(this.tileWidth, this.tileHeight) * 0.5)
         this.ctx.font = fontSize + "px Arial"
         this.ctx.textAlign = "center"
-        this.ctx.fillStyle = color
+        
+        // Use custom colors for hieroglyphs
+        if (color === "#000") {
+          // Use active colors when prayer is highlighted (active)
+          if (text === "R") {
+            this.ctx.fillStyle = colors.rigourActiveColor
+          } else if (text === "A") {
+            this.ctx.fillStyle = colors.auguryActiveColor
+          } else if (text === "S") {
+            this.ctx.fillStyle = colors.prayMagicActiveColor
+          } else if (text === "B") {
+            this.ctx.fillStyle = colors.prayRangeActiveColor
+          } else {
+            this.ctx.fillStyle = color
+          }
+        } else {
+          // Use inactive colors for normal state
+          if (text === "R") {
+            this.ctx.fillStyle = colors.rigourColor
+          } else if (text === "A") {
+            this.ctx.fillStyle = colors.auguryColor
+          } else if (text === "S") {
+            this.ctx.fillStyle = colors.prayMagicColor
+          } else if (text === "B") {
+            this.ctx.fillStyle = colors.prayRangeColor
+          } else {
+            this.ctx.fillStyle = color
+          }
+        }
+        
         this.ctx.fillText(prayerDisplay(text), (pos.x + 0.5) * this.tileWidth, (pos.y + 0.5) * this.tileHeight + fontSize * 0.4)
       }
 
