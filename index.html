@@ -710,7 +710,14 @@
         this.weaponCD = config.hunleffFirstAttackTypeCD
         this.attackCount = 0
         this.halfSwapTick = -1 // Track when to play swap sound
+        this.tornadoCD = this.getRandomTornadoCD() // Separate tornado timer
       }
+      
+      getRandomTornadoCD() {
+        // Random interval between 40-80 ticks (similar to original 50 tick average)
+        return 40 + Math.floor(Math.random() * 41)
+      }
+      
       hit(weapon) {
         if (weapon != this.prayer) {
           this.prayerCD--;
@@ -718,8 +725,8 @@
         }
       }
       move() {
-        // Only handle prayer swapping if boss attacks are enabled
-        if (!config.disableBossAttacks && this.prayerCD == 0) {
+        // Handle prayer swapping based on successful player hits (always active)
+        if (this.prayerCD == 0) {
           this.prayer = this.prayer == "B" ? "S" : "B"
           this.prayerCD = config.hunleffPrayerSwapHits
         }
@@ -740,34 +747,43 @@
           this.halfSwapTick = -1
         }
 
-        if (this.attackCD == 0) {
-          // Check if this should be a tornado spawn attack (every 10 attacks for variety)
-          const isTornadoAttack = (this.attackCount % 10 == 0)
-
-          if (isTornadoAttack) {
-            // Tornado spawn attack - completely replaces regular attack
+        // Handle tornado spawning differently based on mode
+        if (config.disableBossAttacks) {
+          // Tornado-only mode: use separate random timer
+          this.tornadoCD--
+          if (this.tornadoCD <= 0) {
             if (config.attackSwapSounds) tornadoSpawnSound()
             this.game.spawnTornadoes()
-            this.attackCount++
-          } else if (!config.disableBossAttacks) {
-            // Regular attack with projectile - only if boss attacks are not disabled
-            this.game.bossCast(this.weapon)
-            this.attackCount++
-            // Play attack sound based on weapon type
-            if (config.attackSwapSounds) {
-              if (this.weapon == "B") {
-                bowAttackSound()
-              } else {
-                mageAttackSound()
+            this.tornadoCD = this.getRandomTornadoCD() // Reset with new random interval
+          }
+        } else {
+          // Normal mode: tornado every 10 attacks
+          if (this.attackCD == 0) {
+            // Check if this should be a tornado spawn attack (every 10 attacks for variety)
+            const isTornadoAttack = (this.attackCount % 10 == 0)
+
+            if (isTornadoAttack) {
+              // Tornado spawn attack - completely replaces regular attack
+              if (config.attackSwapSounds) tornadoSpawnSound()
+              this.game.spawnTornadoes()
+              this.attackCount++
+            } else {
+              // Regular attack with projectile
+              this.game.bossCast(this.weapon)
+              this.attackCount++
+              // Play attack sound based on weapon type
+              if (config.attackSwapSounds) {
+                if (this.weapon == "B") {
+                  bowAttackSound()
+                } else {
+                  mageAttackSound()
+                }
               }
             }
-          }
-          // If boss attacks are disabled and it's not a tornado attack, just wait
 
-          this.attackCD = config.hunleffAttackCD
+            this.attackCD = config.hunleffAttackCD
 
-          // Handle weapon swap timing - only if boss attacks are enabled
-          if (!config.disableBossAttacks) {
+            // Handle weapon swap timing
             this.weaponCD--
             if (this.weaponCD == 0) {
               this.weapon = this.weapon == "B" ? "S" : "B"
@@ -776,11 +792,6 @@
               this.halfSwapTick = this.game.tick + Math.floor(config.hunleffAttackCD / 2)
             }
           }
-        }
-
-        // Only decrement prayer CD if attacks are enabled
-        if (!config.disableBossAttacks && this.prayerCD > 0) {
-          this.prayerCD--
         }
       }
       get position() {
