@@ -757,20 +757,18 @@
             this.tornadoCD = this.getRandomTornadoCD() // Reset with new random interval
           }
         } else {
-          // Normal mode: tornado every 10 attacks
+          // Normal mode: 10% random chance for tornado each attack cycle
           if (this.attackCD == 0) {
-            // Check if this should be a tornado spawn attack (every 10 attacks for variety)
-            const isTornadoAttack = (this.attackCount % 10 == 0)
+            // 10% chance for tornado spawn
+            const isTornadoAttack = Math.random() < 0.1
 
             if (isTornadoAttack) {
               // Tornado spawn attack - completely replaces regular attack
               if (config.attackSwapSounds) tornadoSpawnSound()
               this.game.spawnTornadoes()
-              this.attackCount++
             } else {
               // Regular attack with projectile
               this.game.bossCast(this.weapon)
-              this.attackCount++
               // Play attack sound based on weapon type
               if (config.attackSwapSounds) {
                 if (this.weapon == "B") {
@@ -781,6 +779,7 @@
               }
             }
 
+            this.attackCount++
             this.attackCD = config.hunleffAttackCD
 
             // Handle weapon swap timing
